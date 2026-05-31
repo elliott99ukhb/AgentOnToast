@@ -1,18 +1,20 @@
-# Contributing to CopilotOnToast
+# Contributing to CopilotOnToast (macOS)
 
 Thank you for your interest in contributing! This document covers how to report issues, suggest improvements, and submit code changes.
+
+> This is the macOS port. For the original Windows project, see [melodiouscoders/CopilotOnToast](https://github.com/melodiouscoders/CopilotOnToast).
 
 ---
 
 ## Reporting bugs
 
-Before opening a new issue, please [search existing issues](https://github.com/melodiouscoders/CopilotOnToast/issues) to avoid duplicates.
+Before opening a new issue, please [search existing issues](https://github.com/elliott99ukhb/CopilotOnToast/issues) to avoid duplicates.
 
 When reporting a bug, include:
 
-- Your Windows version and PowerShell version (`$PSVersionTable`)
+- Your macOS version (`sw_vers`)
+- Your Bash version (`bash --version`)
 - Your Copilot CLI version (`copilot --version`)
-- Whether BurntToast is installed and which version (`Get-Module BurntToast -ListAvailable`)
 - Steps to reproduce the issue
 - What you expected to happen vs what actually happened
 
@@ -28,7 +30,7 @@ Open an issue with the `enhancement` label. Describe the feature, the problem it
 
 ## Submitting a pull request
 
-1. **Fork** the repository and create a branch from `main`:
+1. **Fork** the repository and create a branch:
 
    ```bash
    git checkout -b my-feature
@@ -38,7 +40,7 @@ Open an issue with the `enhancement` label. Describe the feature, the problem it
 
 3. **Test your changes** by running a Copilot CLI session and verifying that notifications fire correctly for the hooks you modified.
 
-4. **Open a pull request** against `main`. Fill in the PR description with:
+4. **Open a pull request.** Fill in the PR description with:
    - What changed and why
    - How you tested it
    - Any follow-up work or known limitations
@@ -49,26 +51,23 @@ Open an issue with the `enhancement` label. Describe the feature, the problem it
 
 ### Prerequisites
 
-- Windows with PowerShell 7+ (`pwsh`)
+- macOS (notifications use the built-in `osascript`)
 - [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli)
-- [BurntToast](https://github.com/Windos/BurntToast) PowerShell module
 
-  ```powershell
-  Install-Module BurntToast -Scope CurrentUser
-  ```
+No extra dependencies are required — the hook script relies only on `osascript` and `plutil`, both bundled with macOS.
 
 ### Testing hooks locally
 
 You can test the notification script directly by piping a JSON payload into it:
 
-```powershell
+```bash
 # Test agentStop notification
-'{}' | $env:COPILOT_HOOK_EVENT = 'agentStop'; pwsh -NoProfile -File .github/hooks/copilot-on-toast.ps1
+echo '{}' | COPILOT_HOOK_EVENT=agentStop bash .github/hooks/copilot-on-toast.sh
 ```
 
-```powershell
+```bash
 # Test permissionRequest with a tool name
-$env:COPILOT_HOOK_EVENT = 'permissionRequest'; '{"toolName":"bash"}' | pwsh -NoProfile -File .github/hooks/copilot-on-toast.ps1
+echo '{"toolName":"bash"}' | COPILOT_HOOK_EVENT=permissionRequest bash .github/hooks/copilot-on-toast.sh
 ```
 
 Or start a real Copilot CLI session in this repository — the hooks in `.github/hooks/` will fire automatically.
@@ -77,6 +76,6 @@ Or start a real Copilot CLI session in this repository — the hooks in `.github
 
 ## Code style
 
-- PowerShell: follow the existing style in `copilot-on-toast.ps1` — single quotes for strings, `SilentlyContinue` for expected errors, graceful fallback to `Write-Host` when BurntToast is unavailable.
+- Bash: follow the existing style in `copilot-on-toast.sh` — small focused helpers, quote all expansions, and keep the script `shellcheck`-clean.
 - JSON: 2-space indentation, consistent with the existing `copilot-on-toast.json`.
-- Keep the PowerShell script self-contained — no external dependencies beyond BurntToast.
+- Keep the hook script self-contained — no dependencies beyond what ships with macOS (`osascript`, `plutil`).

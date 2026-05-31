@@ -62,8 +62,8 @@ Re-enable them after your yolo session:
 
 ## Customising notification text
 
-To change the wording of a notification, edit `.github/hooks/copilot-on-toast.ps1`. Each event's title and body are set near the top of the `switch` block.
+To change the wording of a notification, edit `.github/hooks/copilot-on-toast.sh`. Each event's title and body are set in the `case` block.
 
 ## Removing a hook entirely
 
-To stop a hook event from firing at all (not just suppress the toast), remove its entry from `.github/hooks/copilot-on-toast.json`.
+To stop a hook event from firing at all (not just suppress the notification), remove its entry from `.github/hooks/copilot-on-toast.json`.

@@ -28,10 +28,9 @@ What actually happened. Include any error messages or console output.
 
 | | |
 |---|---|
-| Windows version | (e.g. Windows 11 23H2) |
-| PowerShell version | (run `$PSVersionTable.PSVersion`) |
+| macOS version | (run `sw_vers`) |
+| Bash version | (run `bash --version` — first line) |
 | Copilot CLI version | (run `copilot --version`) |
-| BurntToast version | (run `(Get-Module BurntToast -ListAvailable).Version`) |
 
 ## Additional context
 

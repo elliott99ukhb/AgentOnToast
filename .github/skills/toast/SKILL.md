@@ -3,7 +3,7 @@ name: toast
 description: Manages CopilotOnToast desktop notification settings. Use this skill when the user asks to enable, disable, mute, silence, or configure desktop toast notifications, or mentions specific notification events like "permission toasts", "session notifications", "error toasts", etc.
 ---
 
-CopilotOnToast sends Windows desktop toast notifications for Copilot CLI hook events. Notification settings are controlled by the config file at:
+CopilotOnToast sends native macOS desktop notifications for Copilot CLI hook events. Notification settings are controlled by the config file at:
 
 ```
 .github/hooks/copilot-on-toast.config.json

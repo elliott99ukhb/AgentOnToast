@@ -2,63 +2,68 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [macos, main]
     paths:
       - '.github/hooks/**'
-      - 'install.ps1'
+      - 'install.sh'
       - '.github/workflows/ci.yml'
   pull_request:
-    branches: [main]
     paths:
       - '.github/hooks/**'
-      - 'install.ps1'
+      - 'install.sh'
       - '.github/workflows/ci.yml'
 
 permissions:
   contents: read
 
 jobs:
-  validate:
-    name: Validate hooks
-    runs-on: windows-latest
-
+  lint:
+    name: Lint & validate
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Validate copilot-on-toast.json is valid JSON
-        shell: pwsh
+      - name: Bash syntax check
         run: |
-          $json = Get-Content .github/hooks/copilot-on-toast.json -Raw | ConvertFrom-Json
-          if (-not $json.version) { throw "Missing 'version' field in hooks JSON" }
-          if (-not $json.hooks)   { throw "Missing 'hooks' field in hooks JSON" }
-          Write-Host "hooks JSON is valid. Hooks defined: $($json.hooks.PSObject.Properties.Name -join ', ')"
+          bash -n .github/hooks/copilot-on-toast.sh
+          bash -n install.sh
 
-      - name: Check PowerShell script syntax
-        shell: pwsh
-        run: |
-          $errors = $null
-          $null = [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path .github/hooks/copilot-on-toast.ps1).Path,
-            [ref]$null,
-            [ref]$errors
-          )
-          if ($errors.Count -gt 0) {
-            $errors | ForEach-Object { Write-Error $_.Message }
-            throw "Syntax errors found in copilot-on-toast.ps1"
-          }
-          Write-Host "copilot-on-toast.ps1 syntax is valid."
+      - name: ShellCheck
+        run: shellcheck .github/hooks/copilot-on-toast.sh install.sh
 
-      - name: Check install.ps1 syntax
-        shell: pwsh
+      - name: Validate JSON files
         run: |
-          $errors = $null
-          $null = [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path install.ps1).Path,
-            [ref]$null,
-            [ref]$errors
-          )
-          if ($errors.Count -gt 0) {
-            $errors | ForEach-Object { Write-Error $_.Message }
-            throw "Syntax errors found in install.ps1"
-          }
-          Write-Host "install.ps1 syntax is valid."
+          python3 - <<'PY'
+          import json
+          d = json.load(open('.github/hooks/copilot-on-toast.json'))
+          assert d.get('version'), "Missing 'version' field in hooks JSON"
+          assert d.get('hooks'),   "Missing 'hooks' field in hooks JSON"
+          print("hooks JSON is valid. Hooks defined:", ", ".join(d['hooks']))
+          json.load(open('.github/hooks/copilot-on-toast.config.json'))
+          print("config JSON is valid.")
+          PY
+
+  smoke:
+    name: macOS smoke test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Fire every event (must exit 0)
+        run: |
+          set -e
+          H=.github/hooks/copilot-on-toast.sh
+          echo '{}'                          | COPILOT_HOOK_EVENT=sessionStart        bash "$H"
+          echo '{"reason":"user_ended"}'     | COPILOT_HOOK_EVENT=sessionEnd          bash "$H"
+          echo '{"toolName":"bash"}'         | COPILOT_HOOK_EVENT=permissionRequest   bash "$H"
+          echo '{"error":{"message":"x"}}'   | COPILOT_HOOK_EVENT=errorOccurred       bash "$H"
+          echo '{"prompt":"hello"}'          | COPILOT_HOOK_EVENT=userPromptSubmitted bash "$H"
+          echo '{"toolName":"shell"}'        | COPILOT_HOOK_EVENT=postToolUseFailure  bash "$H"
+          echo '{}'                          | COPILOT_HOOK_EVENT=agentStop           bash "$H"
+          echo "All events exited 0."
+
+      - name: Verify plutil JSON parsing (nested key)
+        run: |
+          out="$(echo '{"error":{"message":"deep"}}' | plutil -extract error.message raw -o - -)"
+          [ "$out" = "deep" ] || { echo "plutil nested parse failed: '$out'"; exit 1; }
+          echo "plutil parsing OK"

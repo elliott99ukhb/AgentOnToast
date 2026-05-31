@@ -8,10 +8,11 @@
 
 ## How has this been tested?
 
-<!-- Describe how you verified the change works. e.g. "Started a Copilot CLI session and confirmed agentStop toast fires correctly." -->
+<!-- Describe how you verified the change works. e.g. "Started a Copilot CLI session and confirmed the agentStop notification fires correctly." -->
 
 ## Checklist
 
 - [ ] I've tested the hook(s) I changed in a live Copilot CLI session
-- [ ] The hooks JSON is valid (run `Get-Content .github/hooks/copilot-on-toast.json | ConvertFrom-Json` — no errors)
+- [ ] The hooks JSON is valid (run `plutil -convert xml1 -o /dev/null .github/hooks/copilot-on-toast.json` — no errors)
+- [ ] `shellcheck .github/hooks/copilot-on-toast.sh install.sh` is clean
 - [ ] I've updated the README if the change affects user-facing behaviour

@@ -1,9 +1,9 @@
 ---
-title: CopilotOnToast
-description: Desktop toast notifications for GitHub Copilot CLI — get notified when your agent finishes, needs approval, hits an error, and more.
+title: CopilotOnToast for macOS
+description: Native macOS notifications for GitHub Copilot CLI — get notified when your agent finishes, needs approval, hits an error, and more.
 template: splash
 hero:
-  tagline: Walk away while Copilot works. Get notified the moment it's done — or when it needs you.
+  tagline: Walk away while Copilot works. Get a native macOS notification the moment it's done — or when it needs you.
   image:
     file: ../../assets/copilot-icon.png
   actions:
@@ -11,7 +11,7 @@ hero:
       link: /CopilotOnToast/getting-started/
       icon: right-arrow
     - text: View on GitHub
-      link: https://github.com/melodiouscoders/CopilotOnToast
+      link: https://github.com/elliott99ukhb/CopilotOnToast
       icon: external
       variant: minimal
 ---
@@ -20,13 +20,13 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
   <Card title="Never miss a response" icon="approve-check">
-    Walk away from your terminal while Copilot works and get a desktop notification the moment it finishes.
+    Walk away from your terminal while Copilot works and get a native macOS notification the moment it finishes.
   </Card>
   <Card title="Action alerts" icon="warning">
     Get notified instantly when Copilot needs your approval before it can continue.
   </Card>
-  <Card title="One-line install" icon="rocket">
-    A single PowerShell command installs everything into your repo in seconds.
+  <Card title="Zero dependencies" icon="rocket">
+    A single `curl | bash` command installs everything. Uses only `osascript` and `plutil` — both built into macOS.
   </Card>
   <Card title="Fully configurable" icon="setting">
     Enable, disable, and customise notifications per event — or manage settings conversationally with `/toast`.
@@ -35,4 +35,6 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
 ---
 
-> **CopilotOnToast is an independent, community-created project by [melodiouscode](https://melodiouscode.net) and is not affiliated with, endorsed by, or an official product of GitHub or Microsoft.** The GitHub Copilot name and logo are trademarks of their respective owners.
+> This is the **macOS port** of [melodiouscoders/CopilotOnToast](https://github.com/melodiouscoders/CopilotOnToast), adapted under the MIT licence.
+
+> **CopilotOnToast is an independent, community-created project and is not affiliated with, endorsed by, or an official product of GitHub or Microsoft.** The GitHub Copilot name and logo are trademarks of their respective owners.
