@@ -25,22 +25,22 @@ jobs:
 
       - name: Bash syntax check
         run: |
-          bash -n .github/hooks/copilot-on-toast.sh
+          bash -n .github/hooks/on-toast.sh
           bash -n install.sh
 
       - name: ShellCheck
-        run: shellcheck .github/hooks/copilot-on-toast.sh install.sh
+        run: shellcheck .github/hooks/on-toast.sh install.sh
 
       - name: Validate JSON files
         run: |
           python3 - <<'PY'
           import json
-          d = json.load(open('.github/hooks/copilot-on-toast.json'))
-          assert d.get('version'), "Missing 'version' field in hooks JSON"
-          assert d.get('hooks'),   "Missing 'hooks' field in hooks JSON"
-          print("hooks JSON is valid. Hooks defined:", ", ".join(d['hooks']))
-          json.load(open('.github/hooks/copilot-on-toast.config.json'))
-          print("config JSON is valid.")
+          c = json.load(open('.github/hooks/copilot-on-toast.json'))
+          assert c.get('version') and c.get('hooks'), "copilot-on-toast.json missing version/hooks"
+          print("copilot-on-toast.json valid; hooks:", ", ".join(c['hooks']))
+          json.load(open('.github/hooks/on-toast.config.json'))
+          json.load(open('.github/hooks/claude-hooks.json'))
+          print("on-toast.config.json and claude-hooks.json valid.")
           PY
 
   smoke:
@@ -49,21 +49,53 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Fire every event (must exit 0)
+      - name: Copilot mode — every event exits 0
         run: |
           set -e
-          H=.github/hooks/copilot-on-toast.sh
-          echo '{}'                          | COPILOT_HOOK_EVENT=sessionStart        bash "$H"
-          echo '{"reason":"user_ended"}'     | COPILOT_HOOK_EVENT=sessionEnd          bash "$H"
-          echo '{"toolName":"bash"}'         | COPILOT_HOOK_EVENT=permissionRequest   bash "$H"
-          echo '{"error":{"message":"x"}}'   | COPILOT_HOOK_EVENT=errorOccurred       bash "$H"
-          echo '{"prompt":"hello"}'          | COPILOT_HOOK_EVENT=userPromptSubmitted bash "$H"
-          echo '{"toolName":"shell"}'        | COPILOT_HOOK_EVENT=postToolUseFailure  bash "$H"
-          echo '{}'                          | COPILOT_HOOK_EVENT=agentStop           bash "$H"
-          echo "All events exited 0."
+          H=.github/hooks/on-toast.sh
+          for ev in sessionStart sessionEnd agentStop permissionRequest \
+                    errorOccurred userPromptSubmitted postToolUseFailure; do
+            echo '{"toolName":"x","reason":"y","prompt":"z","error":{"message":"e"}}' \
+              | COPILOT_HOOK_EVENT="$ev" bash "$H"
+          done
+          echo "Copilot mode OK."
 
-      - name: Verify plutil JSON parsing (nested key)
+      - name: Claude mode — every event exits 0
         run: |
-          out="$(echo '{"error":{"message":"deep"}}' | plutil -extract error.message raw -o - -)"
-          [ "$out" = "deep" ] || { echo "plutil nested parse failed: '$out'"; exit 1; }
-          echo "plutil parsing OK"
+          set -e
+          H=.github/hooks/on-toast.sh
+          for j in '{"hook_event_name":"SessionStart"}' \
+                   '{"hook_event_name":"SessionEnd","reason":"clear"}' \
+                   '{"hook_event_name":"Stop"}' \
+                   '{"hook_event_name":"SubagentStop"}' \
+                   '{"hook_event_name":"UserPromptSubmit","prompt":"hi"}' \
+                   '{"hook_event_name":"PostToolUseFailure","tool_name":"Bash","tool_error":"x"}' \
+                   '{"hook_event_name":"Notification","notification_type":"idle_prompt","message":"waiting"}' \
+                   '{"hook_event_name":"Notification","notification_type":"permission_prompt","message":"approve?"}'; do
+            printf '%s' "$j" | bash "$H"
+          done
+          echo "Claude mode OK."
+
+      - name: settings.json merge is non-destructive
+        run: |
+          set -e
+          tmp=$(mktemp -d); export HOME="$tmp"
+          mkdir -p "$HOME/.claude"
+          echo '{"theme":"dark","hooks":{"Stop":[{"hooks":[{"type":"command","command":"echo mine"}]}]}}' > "$HOME/.claude/settings.json"
+          SETTINGS_PATH="$HOME/.claude/settings.json" ENGINE_CMD='bash "x/on-toast.sh"' python3 - <<'PY'
+          import json, os
+          path=os.environ["SETTINGS_PATH"]; cmd=os.environ["ENGINE_CMD"]
+          events=["SessionStart","SessionEnd","Stop","SubagentStop","UserPromptSubmit","Notification","PostToolUseFailure"]
+          d=json.load(open(path)); h=d.setdefault("hooks",{})
+          for ev in events:
+              g=[x for x in h.get(ev,[]) if not any("on-toast.sh" in k.get("command","") for k in x.get("hooks",[]))]
+              g.append({"hooks":[{"type":"command","command":cmd}]}); h[ev]=g
+          json.dump(d,open(path,"w"),indent=2)
+          PY
+          python3 - <<'PY'
+          import json,os
+          d=json.load(open(os.environ["HOME"]+"/.claude/settings.json"))
+          assert d["theme"]=="dark"
+          assert any("echo mine"==k["command"] for g in d["hooks"]["Stop"] for k in g["hooks"]), "user hook lost"
+          print("merge preserved theme + user's Stop hook.")
+          PY

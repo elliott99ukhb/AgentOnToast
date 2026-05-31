@@ -28,9 +28,11 @@ What actually happened. Include any error messages or console output.
 
 | | |
 |---|---|
+| Which tool | Copilot CLI / Claude Code / both |
 | macOS version | (run `sw_vers`) |
 | Bash version | (run `bash --version` — first line) |
-| Copilot CLI version | (run `copilot --version`) |
+| Copilot CLI version | (run `copilot --version`, if applicable) |
+| Claude Code version | (run `claude --version`, if applicable) |
 
 ## Additional context
 

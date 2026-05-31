@@ -1,0 +1,13 @@
+{
+  "notifications": {
+    "sessionStart":    true,
+    "sessionEnd":      true,
+    "turnComplete":    true,
+    "subagentDone":    true,
+    "needsApproval":   true,
+    "waitingForInput": true,
+    "promptSent":      true,
+    "toolFailed":      true,
+    "error":           true
+  }
+}

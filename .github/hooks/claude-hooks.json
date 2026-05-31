@@ -1,0 +1,26 @@
+{
+  "_comment": "AgentOnToast hooks for Claude Code. install.sh merges this 'hooks' block into your settings.json (preserving everything else). For a manual install, copy the engine to ~/.claude/agent-on-toast/ and add these entries to ~/.claude/settings.json (global) or .claude/settings.json (per-project). The command runs the shared on-toast.sh, which reads the event from stdin.",
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "bash \"$HOME/.claude/agent-on-toast/on-toast.sh\"" } ] }
+    ],
+    "SessionEnd": [
+      { "hooks": [ { "type": "command", "command": "bash \"$HOME/.claude/agent-on-toast/on-toast.sh\"" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "bash \"$HOME/.claude/agent-on-toast/on-toast.sh\"" } ] }
+    ],
+    "SubagentStop": [
+      { "hooks": [ { "type": "command", "command": "bash \"$HOME/.claude/agent-on-toast/on-toast.sh\"" } ] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "bash \"$HOME/.claude/agent-on-toast/on-toast.sh\"" } ] }
+    ],
+    "Notification": [
+      { "hooks": [ { "type": "command", "command": "bash \"$HOME/.claude/agent-on-toast/on-toast.sh\"" } ] }
+    ],
+    "PostToolUseFailure": [
+      { "hooks": [ { "type": "command", "command": "bash \"$HOME/.claude/agent-on-toast/on-toast.sh\"" } ] }
+    ]
+  }
+}

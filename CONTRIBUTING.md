@@ -1,14 +1,14 @@
-# Contributing to CopilotOnToast (macOS)
+# Contributing to AgentOnToast
 
 Thank you for your interest in contributing! This document covers how to report issues, suggest improvements, and submit code changes.
 
-> This is the macOS port. For the original Windows project, see [melodiouscoders/CopilotOnToast](https://github.com/melodiouscoders/CopilotOnToast).
+> AgentOnToast (macOS notifications for Copilot CLI **and** Claude Code) began as a port of [melodiouscoders/CopilotOnToast](https://github.com/melodiouscoders/CopilotOnToast) (Windows).
 
 ---
 
 ## Reporting bugs
 
-Before opening a new issue, please [search existing issues](https://github.com/elliott99ukhb/CopilotOnToast/issues) to avoid duplicates.
+Before opening a new issue, please [search existing issues](https://github.com/elliott99ukhb/AgentOnToast/issues) to avoid duplicates.
 
 When reporting a bug, include:
 
@@ -52,30 +52,29 @@ Open an issue with the `enhancement` label. Describe the feature, the problem it
 ### Prerequisites
 
 - macOS (notifications use the built-in `osascript`)
-- [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli)
+- [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli) and/or [Claude Code](https://docs.claude.com/en/docs/claude-code)
 
-No extra dependencies are required — the hook script relies only on `osascript` and `plutil`, both bundled with macOS.
+No extra dependencies are required — the engine relies only on `osascript` and `plutil`, both bundled with macOS.
 
-### Testing hooks locally
+### Testing the engine locally
 
-You can test the notification script directly by piping a JSON payload into it:
-
-```bash
-# Test agentStop notification
-echo '{}' | COPILOT_HOOK_EVENT=agentStop bash .github/hooks/copilot-on-toast.sh
-```
+The shared engine handles both tools. Pipe a payload into it directly:
 
 ```bash
-# Test permissionRequest with a tool name
-echo '{"toolName":"bash"}' | COPILOT_HOOK_EVENT=permissionRequest bash .github/hooks/copilot-on-toast.sh
+# Copilot mode — event via COPILOT_HOOK_EVENT, Copilot-shaped payload on stdin
+echo '{"toolName":"bash"}' | COPILOT_HOOK_EVENT=permissionRequest bash .github/hooks/on-toast.sh
+
+# Claude mode — event via hook_event_name on stdin
+echo '{"hook_event_name":"Notification","notification_type":"idle_prompt","message":"waiting"}' \
+  | bash .github/hooks/on-toast.sh
 ```
 
-Or start a real Copilot CLI session in this repository — the hooks in `.github/hooks/` will fire automatically.
+Or start a real Copilot CLI / Claude Code session with the hooks installed — they fire automatically.
 
 ---
 
 ## Code style
 
-- Bash: follow the existing style in `copilot-on-toast.sh` — small focused helpers, quote all expansions, and keep the script `shellcheck`-clean.
-- JSON: 2-space indentation, consistent with the existing `copilot-on-toast.json`.
-- Keep the hook script self-contained — no dependencies beyond what ships with macOS (`osascript`, `plutil`).
+- Bash: follow the existing style in `on-toast.sh` — small focused helpers, quote all expansions, keep it `shellcheck`-clean.
+- JSON: 2-space indentation, consistent with `copilot-on-toast.json`.
+- Keep the engine self-contained — no dependencies beyond what ships with macOS (`osascript`, `plutil`).

@@ -1,24 +1,35 @@
-# CopilotOnToast 🍞 — macOS
+# AgentOnToast 🍞
 
-> Native desktop notifications for [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-copilot-cli) — get notified when your agent finishes, needs approval, hits an error, and more.
+> Native macOS notifications for your AI coding agents — get notified when the agent finishes, needs approval, is waiting for you, hits an error, and more. **Works with [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-copilot-cli) and [Claude Code](https://docs.claude.com/en/docs/claude-code) from one install.**
 
-Walk away from your terminal while Copilot works. CopilotOnToast pops a native **macOS** notification for every key agent event so you never miss a beat.
+Walk away from your terminal while your agent works. AgentOnToast pops a native macOS notification for every key event so you never miss a beat — and the banner tells you *which* agent (`Copilot - …` or `Claude - …`).
 
-> **This is a macOS port** of the original Windows project, [melodiouscoders/CopilotOnToast](https://github.com/melodiouscoders/CopilotOnToast). It swaps PowerShell + BurntToast for a plain shell script that uses macOS's built-in `osascript` and `plutil` — **no dependencies to install**. See [Credits](#credits).
+> **A note on lineage:** AgentOnToast began as a macOS port of [melodiouscoders/CopilotOnToast](https://github.com/melodiouscoders/CopilotOnToast) (Windows/PowerShell). It now uses one dependency-free shell engine — macOS's built-in `osascript` + `plutil` — and adds Claude Code support alongside Copilot CLI. See [Credits](#credits).
 
 ---
 
-## Events
+## How it works
 
-| Hook event            | Notification title       | Notification body                       |
-| --------------------- | ------------------------ | --------------------------------------- |
-| `sessionStart`        | Copilot - Started        | Session started.                        |
-| `sessionEnd`          | Copilot - Done           | Session ended: *{reason}*               |
-| `agentStop`           | Copilot - Turn Complete  | Agent finished responding.              |
-| `permissionRequest`   | Copilot - Action Needed  | Awaiting approval for: *{tool}*         |
-| `errorOccurred`       | Copilot - Error          | *{error message}*                       |
-| `userPromptSubmitted` | Copilot - Prompt Sent    | *{prompt preview}*                      |
-| `postToolUseFailure`  | Copilot - Tool Failed    | Tool failed: *{tool}*                   |
+A single engine, [`on-toast.sh`](.github/hooks/on-toast.sh), is registered as a hook for both tools and figures out who called it:
+
+- **Copilot CLI** runs it via `.github/hooks/copilot-on-toast.json` and sets `COPILOT_HOOK_EVENT`.
+- **Claude Code** runs it via your `settings.json` hooks; the event arrives as `hook_event_name` on stdin.
+
+Each tool's event is normalised to a shared **category**, gated by `on-toast.config.json`, and shown as a `<Tool> - <Title>` banner. Zero dependencies beyond what ships with macOS.
+
+## Notifications
+
+| Category | Banner | Copilot event | Claude Code event |
+|---|---|---|---|
+| `sessionStart` | *Started* | `sessionStart` | `SessionStart` |
+| `sessionEnd` | *Done — {reason}* | `sessionEnd` | `SessionEnd` |
+| `turnComplete` | *Turn Complete* | `agentStop` | `Stop` |
+| `subagentDone` | *Subagent Done* | — | `SubagentStop` |
+| `needsApproval` | *Action Needed* | `permissionRequest` | `Notification` (`permission_prompt`) |
+| `waitingForInput` | *Waiting* | — | `Notification` (`idle_prompt`) |
+| `promptSent` | *Prompt Sent — {preview}* | `userPromptSubmitted` | `UserPromptSubmit` |
+| `toolFailed` | *Tool Failed — {tool}* | `postToolUseFailure` | `PostToolUseFailure` |
+| `error` | *Error — {message}* | `errorOccurred` | — |
 
 ---
 
@@ -26,10 +37,10 @@ Walk away from your terminal while Copilot works. CopilotOnToast pops a native *
 
 | Requirement | Notes |
 |---|---|
-| macOS | Notifications use the built-in macOS Notification Center (`osascript`) |
-| [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli) | Hooks require Copilot CLI v1.0+ |
+| macOS | Notifications use the built-in Notification Center (`osascript`) |
+| [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli) and/or [Claude Code](https://docs.claude.com/en/docs/claude-code) | Install for whichever tool(s) you use |
 
-That's it. The notification script relies only on `osascript` and `plutil`, both of which ship with every macOS install — **there is nothing extra to install.**
+Nothing else — the engine relies only on `osascript` and `plutil`, both bundled with macOS.
 
 ---
 
@@ -37,139 +48,136 @@ That's it. The notification script relies only on `osascript` and `plutil`, both
 
 ### Quick install (one-liner)
 
-Run this from the root of any repository where you want notifications:
-
 ```bash
-curl -fsSL https://raw.githubusercontent.com/elliott99ukhb/CopilotOnToast/macos/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/elliott99ukhb/AgentOnToast/macos/install.sh | bash
 ```
 
-This copies the hook files into `.github/hooks/` of your current directory. It will **not** overwrite files that already exist (use `--force` to override — see below).
+By default this sets up **both**:
+
+- **Claude Code — globally** (`~/.claude/settings.json`): notifications in *every* project, installed once. Your existing settings are preserved (a `.bak` is written first).
+- **Copilot CLI — for the current repo** (`.github/hooks/`): because that's how Copilot CLI discovers hooks. Skipped if you're not inside a git repo.
 
 ### Install options
 
-Download the script first if you want to pass options:
-
 ```bash
-curl -fsSL https://raw.githubusercontent.com/elliott99ukhb/CopilotOnToast/macos/install.sh -o install.sh
-bash install.sh [--force] [--path <repo-root>]
+curl -fsSL https://raw.githubusercontent.com/elliott99ukhb/AgentOnToast/macos/install.sh -o install.sh
+bash install.sh [--copilot-only|--claude-only] [--project] [--force] [--path <repo-root>]
 rm install.sh
 ```
 
 | Option | Description |
 |---|---|
-| `--force` | Overwrite existing hook files |
-| `--path <dir>` | Target a specific repository root instead of the current git repo |
+| `--copilot-only` | Only install Copilot CLI hooks (per-repo) |
+| `--claude-only` | Only install Claude Code hooks |
+| `--project` | Install Claude hooks into the repo (`.claude/`) instead of globally |
+| `--force` | Overwrite an existing `on-toast.config.json` |
+| `--path <dir>` | Target a specific repo root instead of the current git repo |
+
+### What gets installed where
+
+```
+Copilot CLI (per repo)         Claude Code (global, default)
+.github/hooks/                 ~/.claude/agent-on-toast/
+  on-toast.sh                    on-toast.sh
+  on-toast.config.json           on-toast.config.json
+  copilot-on-toast.json        ~/.claude/settings.json   (hooks block merged in)
+.github/skills/toast/SKILL.md
+```
 
 ### Manual install
 
-1. Copy `.github/hooks/copilot-on-toast.json`, `.github/hooks/copilot-on-toast.sh`, and `.github/hooks/copilot-on-toast.config.json` from this repo into the `.github/hooks/` directory of your repository.
-2. Make the hook script executable: `chmod +x .github/hooks/copilot-on-toast.sh`
-3. Restart Copilot CLI — hooks are loaded at session start.
+**Copilot CLI:** copy `on-toast.sh`, `copilot-on-toast.json`, and `on-toast.config.json` into your repo's `.github/hooks/`, then `chmod +x .github/hooks/on-toast.sh`.
+
+**Claude Code:** copy `on-toast.sh` + `on-toast.config.json` to `~/.claude/agent-on-toast/` (`chmod +x` the script), then add the [`claude-hooks.json`](.github/hooks/claude-hooks.json) `hooks` block to `~/.claude/settings.json`.
+
+Restart the CLI(s) — hooks load at session start.
 
 ### Verify it's working
 
-Start a Copilot CLI session — you should see a **"Copilot - Started"** notification. You can also test the script directly:
-
 ```bash
-echo '{}' | COPILOT_HOOK_EVENT=agentStop bash .github/hooks/copilot-on-toast.sh
+# Copilot mode
+echo '{}' | COPILOT_HOOK_EVENT=agentStop bash .github/hooks/on-toast.sh
+# Claude mode
+echo '{"hook_event_name":"Stop"}' | bash ~/.claude/agent-on-toast/on-toast.sh
 ```
 
-> **First-run note:** macOS asks for notification permission the first time a notification fires. If you see nothing, check **System Settings → Notifications** and make sure notifications are allowed for your terminal app (Terminal, iTerm, etc.) — that's the process that delivers them.
+> **First-run note:** macOS asks for notification permission the first time a banner fires. If you see nothing, check **System Settings → Notifications** and allow notifications for your terminal app (Terminal, iTerm, VS Code, …) — that's the process that delivers them.
 
 ---
 
 ## Customisation
 
-### Enabling and disabling notifications
+### Turning categories on/off
 
-Edit `.github/hooks/copilot-on-toast.config.json` to turn individual notifications on or off:
+Edit `on-toast.config.json` (in `.github/hooks/` for Copilot, `~/.claude/agent-on-toast/` for Claude):
 
 ```json
 {
   "notifications": {
-    "sessionStart":        true,
-    "sessionEnd":          true,
-    "agentStop":           true,
-    "permissionRequest":   true,
-    "errorOccurred":       true,
-    "userPromptSubmitted": true,
-    "postToolUseFailure":  true
+    "sessionStart":    true,
+    "sessionEnd":      true,
+    "turnComplete":    true,
+    "subagentDone":    true,
+    "needsApproval":   true,
+    "waitingForInput": true,
+    "promptSent":      true,
+    "toolFailed":      true,
+    "error":           true
   }
 }
 ```
 
-Set any event to `false` to silence it. Any event not listed defaults to **enabled**.
+Set any category to `false` to silence it across both tools. Any category not listed defaults to **enabled**.
 
-> **Tip — yolo mode:** If you use `/yolo` and don't want permission notifications, set `"permissionRequest": false`.
-
-### Changing notification text
-
-To change the wording of a notification, edit `.github/hooks/copilot-on-toast.sh` — each event's title and body are set in the `case` block.
+> **Tip:** `promptSent` is the noisiest — many people set it to `false`. `waitingForInput` and `needsApproval` are the most useful "come back" alerts.
 
 ### Managing notifications via Copilot
 
-This repo includes a Copilot CLI skill that lets you manage notification settings conversationally. In a Copilot CLI session, just ask naturally or use `/toast` directly:
+In a Copilot CLI session, the bundled `/toast` skill edits the config conversationally:
 
-```
-/toast disable permission notifications
-```
 ```
 /toast silence everything except errors
 ```
-```
-/toast show me which notifications are enabled
-```
 
-Copilot will read and update `copilot-on-toast.config.json` for you.
+### Changing notification text
 
-> **Tip — `/yolo` mode:** Since yolo is a per-session toggle with no persistent state, the easiest workflow is to ask Copilot to disable permission notifications before starting a yolo session, and re-enable them afterward.
-
-### Removing specific hook triggers
-
-To stop a hook firing altogether (not just suppress the notification), remove its entry from `.github/hooks/copilot-on-toast.json`.
+Edit the `case` blocks in `on-toast.sh` — titles and bodies are set there.
 
 ---
 
 ## Why no custom icon?
 
-macOS's native notifications (`osascript`) are delivered under the identity of the calling process — your terminal app — and don't allow a custom app icon. This port deliberately keeps **zero dependencies** rather than requiring a tool like `terminal-notifier` just for branding. The title, body, and Notification Center behaviour all work exactly as you'd expect.
+macOS native notifications (`osascript`) are delivered under the calling process — your terminal — and can't carry a custom app icon. AgentOnToast keeps **zero dependencies** rather than requiring something like `terminal-notifier` purely for branding. Titles, bodies, and Notification Center behaviour all work normally.
 
 ---
 
 ## Uninstall
 
-Remove the installed files:
-
+**Copilot (per repo):**
 ```bash
-rm .github/hooks/copilot-on-toast.json \
-   .github/hooks/copilot-on-toast.sh \
-   .github/hooks/copilot-on-toast.config.json
-rm .github/skills/toast/SKILL.md
+rm .github/hooks/on-toast.sh .github/hooks/copilot-on-toast.json \
+   .github/hooks/on-toast.config.json .github/skills/toast/SKILL.md
 ```
+
+**Claude (global):** remove the `hooks` entries that reference `agent-on-toast/on-toast.sh` from `~/.claude/settings.json` (restore `~/.claude/settings.json.bak` if you kept it), then `rm -rf ~/.claude/agent-on-toast`.
 
 ---
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## Security
-
-Please see [SECURITY.md](SECURITY.md) for how to report vulnerabilities responsibly.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Security issues: [SECURITY.md](SECURITY.md).
 
 ## Credits
 
-CopilotOnToast was created by [melodiouscode](https://melodiouscode.net) — see the original Windows project at **[melodiouscoders/CopilotOnToast](https://github.com/melodiouscoders/CopilotOnToast)**. This macOS port is an independent fork and adapts that work under the terms of the MIT licence.
-
-If you find CopilotOnToast useful, consider supporting the original author:
+The original **CopilotOnToast** (Windows) was created by [melodiouscode](https://melodiouscode.net) — see [melodiouscoders/CopilotOnToast](https://github.com/melodiouscoders/CopilotOnToast). AgentOnToast is an independent fork that ports it to macOS and extends it to Claude Code, under the MIT licence. If you find it useful, consider supporting the original author:
 
 - ☕ [Buy me a coffee](https://buymeacoffee.com/melodiouscode)
 - ❤️ [Sponsor on GitHub](https://github.com/sponsors/melodiouscoders)
 
 ## License
 
-[MIT](LICENSE) — original work © MelodiousCoders; macOS port © 2026 elliott99ukhb.
+[MIT](LICENSE) — original work © MelodiousCoders; macOS port & Claude Code support © 2026 elliott99ukhb.
 
 ---
 
-> **CopilotOnToast is an independent, community-created project and is not affiliated with, endorsed by, or an official product of GitHub or Microsoft.** The GitHub Copilot name and logo are trademarks of their respective owners.
+> **AgentOnToast is an independent, community-created project and is not affiliated with, endorsed by, or an official product of GitHub, Microsoft, or Anthropic.** GitHub Copilot and Claude are trademarks of their respective owners.

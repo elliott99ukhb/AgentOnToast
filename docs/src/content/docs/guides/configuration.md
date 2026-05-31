@@ -1,38 +1,39 @@
 ---
 title: Configuration
-description: Customise which notifications fire and manage settings conversationally with the /toast skill.
+description: Customise which notification categories fire, for Copilot CLI and Claude Code.
 ---
 
-CopilotOnToast is controlled by a config file in your repository. You can edit it directly or use the `/toast` skill to manage settings conversationally inside a Copilot CLI session.
+AgentOnToast is controlled by a single `on-toast.config.json` keyed by tool-agnostic **categories**. The same category set applies to both tools.
 
-## Config file
+## Config file location
 
-The config file lives at `.github/hooks/copilot-on-toast.config.json` in your repository:
+- **Copilot CLI** (per-repo): `.github/hooks/on-toast.config.json`
+- **Claude Code** (global): `~/.claude/agent-on-toast/on-toast.config.json`
 
 ```json
 {
   "notifications": {
-    "sessionStart":        true,
-    "sessionEnd":          true,
-    "agentStop":           true,
-    "permissionRequest":   true,
-    "errorOccurred":       true,
-    "userPromptSubmitted": true,
-    "postToolUseFailure":  true
+    "sessionStart":    true,
+    "sessionEnd":      true,
+    "turnComplete":    true,
+    "subagentDone":    true,
+    "needsApproval":   true,
+    "waitingForInput": true,
+    "promptSent":      true,
+    "toolFailed":      true,
+    "error":           true
   }
 }
 ```
 
-Set any event to `false` to silence it. Any event not listed in the file defaults to **enabled**.
+Set any category to `false` to silence it. Any category not listed defaults to **enabled**.
 
 ## Using the `/toast` skill
 
-The install script also sets up a Copilot CLI skill that lets you manage notification settings conversationally — no manual JSON editing required.
-
-In any Copilot CLI session, use natural language or the `/toast` slash command:
+In a Copilot CLI session, the bundled `/toast` skill manages the config conversationally:
 
 ```
-/toast disable permission toasts
+/toast disable permission notifications
 ```
 ```
 /toast silence everything except errors
@@ -40,30 +41,20 @@ In any Copilot CLI session, use natural language or the `/toast` slash command:
 ```
 /toast show me which notifications are enabled
 ```
-```
-/toast enable all
-```
 
-Copilot will read and update `copilot-on-toast.config.json` for you and confirm what changed.
+Copilot will read and update `on-toast.config.json` for you.
 
-## Yolo mode tip
+## Reducing noise
 
-`permissionRequest` notifications fire **before** the permission service runs, which means they fire even in `/yolo` mode. If you use yolo and don't want these prompts:
-
-```
-/toast disable permission toasts
-```
-
-Re-enable them after your yolo session:
-
-```
-/toast enable all
-```
+- `promptSent` fires on every prompt you submit — the most common one to set to `false`.
+- `needsApproval` and `waitingForInput` are the most useful "come back" alerts; keep these on.
+- **Copilot `/yolo` mode:** `needsApproval` still fires in yolo. Ask Copilot to `/toast disable permission notifications` before a yolo session and re-enable after.
 
 ## Customising notification text
 
-To change the wording of a notification, edit `.github/hooks/copilot-on-toast.sh`. Each event's title and body are set in the `case` block.
+To change the wording, edit the `case` blocks in `on-toast.sh` — titles and bodies are set there.
 
 ## Removing a hook entirely
 
-To stop a hook event from firing at all (not just suppress the notification), remove its entry from `.github/hooks/copilot-on-toast.json`.
+- **Copilot:** remove the event's entry from `.github/hooks/copilot-on-toast.json`.
+- **Claude Code:** remove that event's AgentOnToast entry from your `settings.json` `hooks` block.

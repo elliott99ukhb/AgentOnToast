@@ -4,7 +4,7 @@
     "sessionStart": [
       {
         "type": "command",
-        "bash": "bash ./copilot-on-toast.sh",
+        "bash": "bash ./on-toast.sh",
         "cwd": ".github/hooks",
         "timeoutSec": 10,
         "env": { "COPILOT_HOOK_EVENT": "sessionStart" }
@@ -13,7 +13,7 @@
     "sessionEnd": [
       {
         "type": "command",
-        "bash": "bash ./copilot-on-toast.sh",
+        "bash": "bash ./on-toast.sh",
         "cwd": ".github/hooks",
         "timeoutSec": 10,
         "env": { "COPILOT_HOOK_EVENT": "sessionEnd" }
@@ -22,7 +22,7 @@
     "agentStop": [
       {
         "type": "command",
-        "bash": "bash ./copilot-on-toast.sh",
+        "bash": "bash ./on-toast.sh",
         "cwd": ".github/hooks",
         "timeoutSec": 10,
         "env": { "COPILOT_HOOK_EVENT": "agentStop" }
@@ -31,7 +31,7 @@
     "errorOccurred": [
       {
         "type": "command",
-        "bash": "bash ./copilot-on-toast.sh",
+        "bash": "bash ./on-toast.sh",
         "cwd": ".github/hooks",
         "timeoutSec": 10,
         "env": { "COPILOT_HOOK_EVENT": "errorOccurred" }
@@ -40,7 +40,7 @@
     "userPromptSubmitted": [
       {
         "type": "command",
-        "bash": "bash ./copilot-on-toast.sh",
+        "bash": "bash ./on-toast.sh",
         "cwd": ".github/hooks",
         "timeoutSec": 10,
         "env": { "COPILOT_HOOK_EVENT": "userPromptSubmitted" }
@@ -49,7 +49,7 @@
     "permissionRequest": [
       {
         "type": "command",
-        "bash": "bash ./copilot-on-toast.sh",
+        "bash": "bash ./on-toast.sh",
         "cwd": ".github/hooks",
         "timeoutSec": 10,
         "env": { "COPILOT_HOOK_EVENT": "permissionRequest" }
@@ -58,7 +58,7 @@
     "postToolUseFailure": [
       {
         "type": "command",
-        "bash": "bash ./copilot-on-toast.sh",
+        "bash": "bash ./on-toast.sh",
         "cwd": ".github/hooks",
         "timeoutSec": 10,
         "env": { "COPILOT_HOOK_EVENT": "postToolUseFailure" }

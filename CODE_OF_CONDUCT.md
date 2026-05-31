@@ -30,7 +30,7 @@ Community leaders are responsible for clarifying and enforcing our standards of 
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behaviour may be reported by opening a [GitHub issue](https://github.com/elliott99ukhb/CopilotOnToast/issues) or using the repository's private security advisory if the matter is sensitive. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behaviour may be reported by opening a [GitHub issue](https://github.com/elliott99ukhb/AgentOnToast/issues) or using the repository's private security advisory if the matter is sensitive. All complaints will be reviewed and investigated promptly and fairly.
 
 ## Attribution
 
