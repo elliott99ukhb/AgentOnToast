@@ -1,49 +1,53 @@
 ---
 name: toast
-description: Manages CopilotOnToast desktop notification settings. Use this skill when the user asks to enable, disable, mute, silence, or configure desktop toast notifications, or mentions specific notification events like "permission toasts", "session notifications", "error toasts", etc.
+description: Manages AgentOnToast desktop notification settings. Use this skill when the user asks to enable, disable, mute, silence, or configure desktop notifications for Copilot CLI or Claude Code, or mentions specific categories like "permission notifications", "waiting alerts", "tool failure toasts", etc.
 ---
 
-CopilotOnToast sends Windows desktop toast notifications for Copilot CLI hook events. Notification settings are controlled by the config file at:
+AgentOnToast sends native macOS notifications for AI agent CLI hook events (GitHub Copilot CLI and Claude Code). Which notifications fire is controlled by a config file:
 
-```
-.github/hooks/copilot-on-toast.config.json
-```
+- Copilot CLI (per-repo): `.github/hooks/on-toast.config.json`
+- Claude Code (global): `~/.claude/agent-on-toast/on-toast.config.json`
+
+Edit whichever one applies to the tool the user is asking about (in a Copilot CLI session, that's the repo's `.github/hooks/on-toast.config.json`).
 
 ## Config format
 
 ```json
 {
   "notifications": {
-    "sessionStart":        true,
-    "sessionEnd":          true,
-    "agentStop":           true,
-    "permissionRequest":   true,
-    "errorOccurred":       true,
-    "userPromptSubmitted": true,
-    "postToolUseFailure":  true
+    "sessionStart":    true,
+    "sessionEnd":      true,
+    "turnComplete":    true,
+    "subagentDone":    true,
+    "needsApproval":   true,
+    "waitingForInput": true,
+    "promptSent":      true,
+    "toolFailed":      true,
+    "error":           true
   }
 }
 ```
 
-Set any event to `false` to silence it. Any event omitted from the file defaults to **enabled**.
+Set any category to `false` to silence it. Any category omitted from the file defaults to **enabled**.
 
-## Event reference
+## Category reference
 
-| Key                   | When it fires                                              |
-|-----------------------|------------------------------------------------------------|
-| `sessionStart`        | A Copilot CLI session begins                               |
-| `sessionEnd`          | A Copilot CLI session ends                                 |
-| `agentStop`           | The agent finishes a turn (most useful for "done" alerts)  |
-| `permissionRequest`   | Copilot asks to use a tool — fires even in `/yolo` mode   |
-| `errorOccurred`       | An error occurs during the session                         |
-| `userPromptSubmitted` | The user submits a prompt                                  |
-| `postToolUseFailure`  | A tool call fails                                          |
+| Key | When it fires |
+|---|---|
+| `sessionStart` | A session begins |
+| `sessionEnd` | A session ends (body includes the reason) |
+| `turnComplete` | The agent finishes a turn — the main "done" alert |
+| `subagentDone` | A subagent finishes (Claude Code) |
+| `needsApproval` | The agent needs approval to use a tool |
+| `waitingForInput` | The agent is idle, waiting for you (Claude Code) |
+| `promptSent` | You submitted a prompt (noisiest — often disabled) |
+| `toolFailed` | A tool call failed |
+| `error` | An error occurred (Copilot CLI) |
 
 ## Instructions
 
-- To **show current settings**: read `.github/hooks/copilot-on-toast.config.json` and summarise which notifications are on and off.
+- To **show current settings**: read the relevant `on-toast.config.json` and summarise which categories are on and off.
 - To **change a setting**: edit the file and update the relevant boolean. Confirm what changed.
-- To **silence all notifications**: set every value to `false`.
-- To **restore defaults**: set all values to `true`.
+- To **silence all notifications**: set every value to `false`. To **restore defaults**: set all to `true`.
 - If the config file does not exist, it can be created with all values set to `true`.
-- Always confirm the change back to the user in plain language (e.g. "Permission request toasts are now disabled.").
+- Always confirm the change back to the user in plain language (e.g. "Permission notifications are now disabled.").

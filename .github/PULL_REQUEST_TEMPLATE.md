@@ -8,10 +8,11 @@
 
 ## How has this been tested?
 
-<!-- Describe how you verified the change works. e.g. "Started a Copilot CLI session and confirmed agentStop toast fires correctly." -->
+<!-- Describe how you verified the change works, and with which tool (Copilot CLI / Claude Code). e.g. "Started a Claude Code session and confirmed the Stop notification fires." -->
 
 ## Checklist
 
-- [ ] I've tested the hook(s) I changed in a live Copilot CLI session
-- [ ] The hooks JSON is valid (run `Get-Content .github/hooks/copilot-on-toast.json | ConvertFrom-Json` — no errors)
+- [ ] I've tested the hook(s) I changed (Copilot CLI and/or Claude Code, or by piping a payload into `on-toast.sh`)
+- [ ] The hooks JSON is valid (run `plutil -convert xml1 -o /dev/null .github/hooks/copilot-on-toast.json` — no errors)
+- [ ] `shellcheck .github/hooks/on-toast.sh install.sh` is clean
 - [ ] I've updated the README if the change affects user-facing behaviour

@@ -2,17 +2,17 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
 export default defineConfig({
-  site: 'https://melodiouscoders.github.io/CopilotOnToast',
-  base: '/CopilotOnToast',
+  site: 'https://elliott99ukhb.github.io/AgentOnToast',
+  base: '/AgentOnToast',
   integrations: [
     starlight({
-      title: 'CopilotOnToast 🍞',
-      description: 'Desktop toast notifications for GitHub Copilot CLI — get notified when your agent finishes, needs approval, hits an error, and more.',
-      social: {
-        github: 'https://github.com/melodiouscoders/CopilotOnToast',
-      },
+      title: 'AgentOnToast 🍞',
+      description: 'Native macOS notifications for GitHub Copilot CLI and Claude Code — get notified when your agent finishes, needs approval, is waiting, or hits an error.',
+      social: [
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/elliott99ukhb/AgentOnToast' },
+      ],
       editLink: {
-        baseUrl: 'https://github.com/melodiouscoders/CopilotOnToast/edit/main/docs/',
+        baseUrl: 'https://github.com/elliott99ukhb/AgentOnToast/edit/macos/docs/',
       },
       sidebar: [
         { label: 'Getting Started', slug: 'getting-started' },
@@ -32,7 +32,7 @@ export default defineConfig({
       head: [
         {
           tag: 'meta',
-          attrs: { property: 'og:image', content: 'https://raw.githubusercontent.com/melodiouscoders/CopilotOnToast/main/.github/hooks/copilot-icon.png' },
+          attrs: { property: 'og:image', content: 'https://raw.githubusercontent.com/elliott99ukhb/AgentOnToast/macos/docs/src/assets/copilot-icon.png' },
         },
       ],
     }),

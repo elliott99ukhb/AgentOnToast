@@ -1,74 +1,66 @@
 ---
 title: Getting Started
-description: Install CopilotOnToast and get Windows desktop notifications for GitHub Copilot CLI in minutes.
+description: Install AgentOnToast and get native macOS notifications for GitHub Copilot CLI and Claude Code in minutes.
 ---
 
-CopilotOnToast hooks into [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-copilot-cli) to pop Windows toast notifications for every key agent event. This page will get you up and running in minutes.
+AgentOnToast hooks into [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-copilot-cli) and [Claude Code](https://docs.claude.com/en/docs/claude-code) to pop native macOS notifications for every key agent event — from one shared, dependency-free engine.
 
 ## Requirements
 
 | Requirement | Notes |
 |---|---|
-| **Windows** | Toast notifications use the Windows notification system |
-| **[PowerShell 7+](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows)** | `pwsh` must be on your PATH — run `winget install Microsoft.PowerShell` |
-| **[BurntToast](https://github.com/Windos/BurntToast)** | PowerShell module used to fire toast notifications |
-| **[GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli)** | Hooks require Copilot CLI v1.0+ |
+| **macOS** | Notifications use the built-in Notification Center (`osascript`) |
+| **[Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli)** and/or **[Claude Code](https://docs.claude.com/en/docs/claude-code)** | Install for whichever tool(s) you use |
+
+There is **nothing else to install** — the engine relies only on `osascript` and `plutil`, both bundled with macOS.
 
 ## Quick install
 
-Run this from the root of any repository where you want notifications:
-
-```powershell
-irm https://raw.githubusercontent.com/melodiouscoders/CopilotOnToast/main/install.ps1 | iex
+```bash
+curl -fsSL https://raw.githubusercontent.com/elliott99ukhb/AgentOnToast/macos/install.sh | bash
 ```
 
-This copies the hook files into `.github/hooks/` of your current directory. It will **not** overwrite files that already exist (use `-Force` to override).
+By default this sets up **both** tools:
 
-## With automatic BurntToast install
+- **Claude Code — globally** (`~/.claude/settings.json`): notifications in every project, installed once. Existing settings are preserved (a `.bak` is written first).
+- **Copilot CLI — for the current repo** (`.github/hooks/`): that's how Copilot CLI discovers hooks. Skipped if you aren't inside a git repo.
 
-If you don't have BurntToast installed yet, download the script first so you can pass parameters:
+## Install options
 
-```powershell
-irm https://raw.githubusercontent.com/melodiouscoders/CopilotOnToast/main/install.ps1 -OutFile install.ps1
-.\install.ps1 -InstallBurntToast
-Remove-Item install.ps1
+```bash
+curl -fsSL https://raw.githubusercontent.com/elliott99ukhb/AgentOnToast/macos/install.sh -o install.sh
+bash install.sh [--copilot-only|--claude-only] [--project] [--force] [--path <repo-root>]
+rm install.sh
 ```
 
-## Install parameters
-
-| Parameter | Description |
+| Option | Description |
 |---|---|
-| `-InstallBurntToast` | Automatically installs BurntToast (`-Scope CurrentUser`) if it's missing |
-| `-Force` | Overwrite existing hook files |
-| `-Path <dir>` | Target a specific repository root instead of the current git repo |
-
-## Manual install
-
-1. Copy `.github/hooks/copilot-on-toast.json`, `.github/hooks/copilot-on-toast.ps1`, `.github/hooks/copilot-on-toast.config.json`, and `.github/hooks/copilot-icon.png` from this repo into the `.github/hooks/` directory of your repository.
-2. Install BurntToast: `Install-Module BurntToast -Scope CurrentUser`
-3. Restart Copilot CLI — hooks are loaded at session start.
+| `--copilot-only` | Only install Copilot CLI hooks (per-repo) |
+| `--claude-only` | Only install Claude Code hooks |
+| `--project` | Install Claude hooks into the repo (`.claude/`) instead of globally |
+| `--force` | Overwrite an existing `on-toast.config.json` |
+| `--path <dir>` | Target a specific repo root instead of the current git repo |
 
 ## Verify it's working
 
-Start a Copilot CLI session. You should see a **"Copilot – Started"** toast notification appear. If not, check:
+Start a session — you should see a **"Copilot - Started"** or **"Claude - Started"** notification. You can also fire one by hand:
 
-- BurntToast is installed: `Get-Module BurntToast -ListAvailable`
-- PowerShell 7 is on your PATH: `pwsh --version`
-- Hook files are present in `.github/hooks/`
+```bash
+# Copilot mode
+echo '{}' | COPILOT_HOOK_EVENT=agentStop bash .github/hooks/on-toast.sh
+# Claude mode
+echo '{"hook_event_name":"Stop"}' | bash ~/.claude/agent-on-toast/on-toast.sh
+```
+
+If you see nothing, open **System Settings → Notifications** and allow notifications for your terminal app (Terminal, iTerm, VS Code, …) — that's the process that delivers them. macOS prompts for this the first time a notification fires.
 
 ## Uninstall
 
-Remove the installed files from `.github/hooks/`:
+**Copilot (per repo):**
 
-```powershell
-Remove-Item .github/hooks/copilot-on-toast.json,
-            .github/hooks/copilot-on-toast.ps1,
-            .github/hooks/copilot-on-toast.config.json,
-            .github/hooks/copilot-icon.png
+```bash
+rm .github/hooks/on-toast.sh .github/hooks/copilot-on-toast.json \
+   .github/hooks/on-toast.config.json .github/skills/toast/SKILL.md
 ```
 
-Remove the skill file if installed:
-
-```powershell
-Remove-Item .github/skills/toast/SKILL.md
-```
+**Claude (global):** remove the `hooks` entries referencing `agent-on-toast/on-toast.sh` from `~/.claude/settings.json` (or restore `~/.claude/settings.json.bak`), then `rm -rf ~/.claude/agent-on-toast`.

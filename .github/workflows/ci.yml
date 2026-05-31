@@ -2,63 +2,100 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [macos, main]
     paths:
       - '.github/hooks/**'
-      - 'install.ps1'
+      - 'install.sh'
       - '.github/workflows/ci.yml'
   pull_request:
-    branches: [main]
     paths:
       - '.github/hooks/**'
-      - 'install.ps1'
+      - 'install.sh'
       - '.github/workflows/ci.yml'
 
 permissions:
   contents: read
 
 jobs:
-  validate:
-    name: Validate hooks
-    runs-on: windows-latest
-
+  lint:
+    name: Lint & validate
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Validate copilot-on-toast.json is valid JSON
-        shell: pwsh
+      - name: Bash syntax check
         run: |
-          $json = Get-Content .github/hooks/copilot-on-toast.json -Raw | ConvertFrom-Json
-          if (-not $json.version) { throw "Missing 'version' field in hooks JSON" }
-          if (-not $json.hooks)   { throw "Missing 'hooks' field in hooks JSON" }
-          Write-Host "hooks JSON is valid. Hooks defined: $($json.hooks.PSObject.Properties.Name -join ', ')"
+          bash -n .github/hooks/on-toast.sh
+          bash -n install.sh
 
-      - name: Check PowerShell script syntax
-        shell: pwsh
-        run: |
-          $errors = $null
-          $null = [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path .github/hooks/copilot-on-toast.ps1).Path,
-            [ref]$null,
-            [ref]$errors
-          )
-          if ($errors.Count -gt 0) {
-            $errors | ForEach-Object { Write-Error $_.Message }
-            throw "Syntax errors found in copilot-on-toast.ps1"
-          }
-          Write-Host "copilot-on-toast.ps1 syntax is valid."
+      - name: ShellCheck
+        run: shellcheck .github/hooks/on-toast.sh install.sh
 
-      - name: Check install.ps1 syntax
-        shell: pwsh
+      - name: Validate JSON files
         run: |
-          $errors = $null
-          $null = [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path install.ps1).Path,
-            [ref]$null,
-            [ref]$errors
-          )
-          if ($errors.Count -gt 0) {
-            $errors | ForEach-Object { Write-Error $_.Message }
-            throw "Syntax errors found in install.ps1"
-          }
-          Write-Host "install.ps1 syntax is valid."
+          python3 - <<'PY'
+          import json
+          c = json.load(open('.github/hooks/copilot-on-toast.json'))
+          assert c.get('version') and c.get('hooks'), "copilot-on-toast.json missing version/hooks"
+          print("copilot-on-toast.json valid; hooks:", ", ".join(c['hooks']))
+          json.load(open('.github/hooks/on-toast.config.json'))
+          json.load(open('.github/hooks/claude-hooks.json'))
+          print("on-toast.config.json and claude-hooks.json valid.")
+          PY
+
+  smoke:
+    name: macOS smoke test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Copilot mode — every event exits 0
+        run: |
+          set -e
+          H=.github/hooks/on-toast.sh
+          for ev in sessionStart sessionEnd agentStop permissionRequest \
+                    errorOccurred userPromptSubmitted postToolUseFailure; do
+            echo '{"toolName":"x","reason":"y","prompt":"z","error":{"message":"e"}}' \
+              | COPILOT_HOOK_EVENT="$ev" bash "$H"
+          done
+          echo "Copilot mode OK."
+
+      - name: Claude mode — every event exits 0
+        run: |
+          set -e
+          H=.github/hooks/on-toast.sh
+          for j in '{"hook_event_name":"SessionStart"}' \
+                   '{"hook_event_name":"SessionEnd","reason":"clear"}' \
+                   '{"hook_event_name":"Stop"}' \
+                   '{"hook_event_name":"SubagentStop"}' \
+                   '{"hook_event_name":"UserPromptSubmit","prompt":"hi"}' \
+                   '{"hook_event_name":"PostToolUseFailure","tool_name":"Bash","tool_error":"x"}' \
+                   '{"hook_event_name":"Notification","notification_type":"idle_prompt","message":"waiting"}' \
+                   '{"hook_event_name":"Notification","notification_type":"permission_prompt","message":"approve?"}'; do
+            printf '%s' "$j" | bash "$H"
+          done
+          echo "Claude mode OK."
+
+      - name: settings.json merge is non-destructive
+        run: |
+          set -e
+          tmp=$(mktemp -d); export HOME="$tmp"
+          mkdir -p "$HOME/.claude"
+          echo '{"theme":"dark","hooks":{"Stop":[{"hooks":[{"type":"command","command":"echo mine"}]}]}}' > "$HOME/.claude/settings.json"
+          SETTINGS_PATH="$HOME/.claude/settings.json" ENGINE_CMD='bash "x/on-toast.sh"' python3 - <<'PY'
+          import json, os
+          path=os.environ["SETTINGS_PATH"]; cmd=os.environ["ENGINE_CMD"]
+          events=["SessionStart","SessionEnd","Stop","SubagentStop","UserPromptSubmit","Notification","PostToolUseFailure"]
+          d=json.load(open(path)); h=d.setdefault("hooks",{})
+          for ev in events:
+              g=[x for x in h.get(ev,[]) if not any("on-toast.sh" in k.get("command","") for k in x.get("hooks",[]))]
+              g.append({"hooks":[{"type":"command","command":cmd}]}); h[ev]=g
+          json.dump(d,open(path,"w"),indent=2)
+          PY
+          python3 - <<'PY'
+          import json,os
+          d=json.load(open(os.environ["HOME"]+"/.claude/settings.json"))
+          assert d["theme"]=="dark"
+          assert any("echo mine"==k["command"] for g in d["hooks"]["Stop"] for k in g["hooks"]), "user hook lost"
+          print("merge preserved theme + user's Stop hook.")
+          PY

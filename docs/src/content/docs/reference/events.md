@@ -1,35 +1,34 @@
 ---
 title: Events Reference
-description: All hook events supported by CopilotOnToast, what triggers them, and their default notification content.
+description: How Copilot CLI and Claude Code hook events map to AgentOnToast notification categories.
 ---
 
-CopilotOnToast registers seven Copilot CLI hook events. This page describes each one — when it fires, the default notification it shows, and any relevant notes.
+AgentOnToast normalises each tool's hook events into shared **categories**. The engine prefixes every banner with the tool that fired it (`Copilot - …` or `Claude - …`), and `on-toast.config.json` toggles by category.
 
-## Events
+## Category mapping
 
-| Event key | Notification title | Notification body | When it fires |
-|---|---|---|---|
-| `sessionStart` | Copilot – Started | Session started. | A Copilot CLI session begins |
-| `sessionEnd` | Copilot – Done | Session ended: *{reason}* | A Copilot CLI session ends |
-| `agentStop` | Copilot – Turn Complete | Agent finished responding. | The agent finishes a turn |
-| `permissionRequest` | Copilot – Action Needed | Awaiting approval for: *{tool}* | Copilot asks to use a tool |
-| `errorOccurred` | Copilot – Error | *{error message}* | An error occurs during the session |
-| `userPromptSubmitted` | Copilot – Prompt Sent | *{prompt preview}* | The user submits a prompt |
-| `postToolUseFailure` | Copilot – Tool Failed | Tool failed: *{tool}* | A tool call fails after execution |
+| Category | Banner title | Body | Copilot CLI event | Claude Code event |
+|---|---|---|---|---|
+| `sessionStart` | *Started* | Session started. | `sessionStart` | `SessionStart` |
+| `sessionEnd` | *Done* | Session ended: *{reason}* | `sessionEnd` | `SessionEnd` |
+| `turnComplete` | *Turn Complete* | Agent finished responding. | `agentStop` | `Stop` |
+| `subagentDone` | *Subagent Done* | A subagent finished. | — | `SubagentStop` |
+| `needsApproval` | *Action Needed* | Awaiting approval for: *{tool}* | `permissionRequest` | `Notification` (`permission_prompt`) |
+| `waitingForInput` | *Waiting* | *{message}* | — | `Notification` (`idle_prompt`) |
+| `promptSent` | *Prompt Sent* | *{prompt preview}* | `userPromptSubmitted` | `UserPromptSubmit` |
+| `toolFailed` | *Tool Failed* | Tool failed: *{tool}* | `postToolUseFailure` | `PostToolUseFailure` |
+| `error` | *Error* | *{error message}* | `errorOccurred` | — |
 
 ## Notes
 
-### `agentStop`
-This is the most useful event for "done" alerts — it fires whenever the agent finishes a turn and is waiting for your input. If you only want one notification enabled, this is the one.
+### `turnComplete`
+The main "done" alert — fires when the agent finishes a turn and is waiting for you. If you keep only one category on, make it this.
 
-### `permissionRequest`
-Fires when Copilot needs your approval before using a tool. This fires **before** the permission service runs, so it fires even in `/yolo` mode. See [Yolo mode tip](/CopilotOnToast/guides/configuration/#yolo-mode-tip) to disable it for yolo sessions.
+### `needsApproval` / `waitingForInput`
+The "come back to the terminal" alerts. For Claude Code these both come from the `Notification` event, distinguished by `notification_type` (`permission_prompt` vs `idle_prompt`). For Copilot, `needsApproval` fires even in `/yolo` mode.
 
-### `sessionEnd`
-The notification body includes the session end reason (e.g., `user_ended`, `timeout`).
+### `promptSent`
+Shows a preview of your submitted prompt. The noisiest category — most people disable it.
 
-### `userPromptSubmitted`
-The notification body shows a preview of the prompt text. Useful as a confirmation that your prompt was received, though most users prefer to disable this one to reduce noise.
-
-### `postToolUseFailure`
-Fires after a tool call completes with a failure status. The notification body includes the name of the tool that failed.
+### Tool detection
+If `COPILOT_HOOK_EVENT` is set, the engine treats the call as Copilot CLI; otherwise it reads `hook_event_name` from the stdin JSON (Claude Code). Events with no mapping (e.g. Claude's `PreCompact`, or `Notification` types other than permission/idle) are ignored.

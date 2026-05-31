@@ -1,17 +1,17 @@
 ---
-title: CopilotOnToast
-description: Desktop toast notifications for GitHub Copilot CLI — get notified when your agent finishes, needs approval, hits an error, and more.
+title: AgentOnToast
+description: Native macOS notifications for GitHub Copilot CLI and Claude Code — get notified when your agent finishes, needs approval, is waiting, or hits an error.
 template: splash
 hero:
-  tagline: Walk away while Copilot works. Get notified the moment it's done — or when it needs you.
+  tagline: Walk away while your agent works. Get a native macOS notification the moment it's done — or when it needs you. Works with Copilot CLI and Claude Code.
   image:
     file: ../../assets/copilot-icon.png
   actions:
     - text: Get Started
-      link: /CopilotOnToast/getting-started/
+      link: /AgentOnToast/getting-started/
       icon: right-arrow
     - text: View on GitHub
-      link: https://github.com/melodiouscoders/CopilotOnToast
+      link: https://github.com/elliott99ukhb/AgentOnToast
       icon: external
       variant: minimal
 ---
@@ -19,20 +19,22 @@ hero:
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
-  <Card title="Never miss a response" icon="approve-check">
-    Walk away from your terminal while Copilot works and get a desktop notification the moment it finishes.
+  <Card title="Two agents, one install" icon="approve-check">
+    A single dependency-free engine notifies you for both GitHub Copilot CLI and Claude Code — the banner tells you which one.
   </Card>
-  <Card title="Action alerts" icon="warning">
-    Get notified instantly when Copilot needs your approval before it can continue.
+  <Card title="Know when you're needed" icon="warning">
+    Get notified the moment the agent needs approval or goes idle waiting for your input, so you can walk away.
   </Card>
-  <Card title="One-line install" icon="rocket">
-    A single PowerShell command installs everything into your repo in seconds.
+  <Card title="Zero dependencies" icon="rocket">
+    A single `curl | bash` command. Uses only `osascript` and `plutil` — both built into macOS.
   </Card>
   <Card title="Fully configurable" icon="setting">
-    Enable, disable, and customise notifications per event — or manage settings conversationally with `/toast`.
+    Enable or disable notification categories per tool — or manage settings conversationally with `/toast`.
   </Card>
 </CardGrid>
 
 ---
 
-> **CopilotOnToast is an independent, community-created project by [melodiouscode](https://melodiouscode.net) and is not affiliated with, endorsed by, or an official product of GitHub or Microsoft.** The GitHub Copilot name and logo are trademarks of their respective owners.
+> AgentOnToast began as a macOS port of [melodiouscoders/CopilotOnToast](https://github.com/melodiouscoders/CopilotOnToast) and now adds Claude Code support, under the MIT licence.
+
+> **AgentOnToast is an independent, community-created project and is not affiliated with, endorsed by, or an official product of GitHub, Microsoft, or Anthropic.** GitHub Copilot and Claude are trademarks of their respective owners.
