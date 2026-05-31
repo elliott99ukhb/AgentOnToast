@@ -23,9 +23,9 @@ TARGET_PATH=''
 # ---- colours (only when stdout is a terminal) -------------------------------
 if [ -t 1 ]; then
     C_CYAN=$'\033[36m'; C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'
-    C_RED=$'\033[31m'; C_GREY=$'\033[90m'; C_RESET=$'\033[0m'
+    C_RED=$'\033[31m'; C_RESET=$'\033[0m'
 else
-    C_CYAN=''; C_GREEN=''; C_YELLOW=''; C_RED=''; C_GREY=''; C_RESET=''
+    C_CYAN=''; C_GREEN=''; C_YELLOW=''; C_RED=''; C_RESET=''
 fi
 
 # ---- argument parsing -------------------------------------------------------
