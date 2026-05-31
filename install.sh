@@ -117,11 +117,13 @@ if [ "$DO_CLAUDE" = 1 ]; then
     if [ "$CLAUDE_SCOPE" = "global" ]; then
         eng_dir="$HOME/.claude/agent-on-toast"
         settings="$HOME/.claude/settings.json"
+        # shellcheck disable=SC2016  # literal $HOME on purpose — the hook shell expands it at runtime
         cmd_path='$HOME/.claude/agent-on-toast/on-toast.sh'
     else
         [ -n "$repo_root" ] || { echo "${C_RED}  ERROR: --project needs a git repo (or --path).${C_RESET}" >&2; exit 1; }
         eng_dir="$repo_root/.claude/agent-on-toast"
         settings="$repo_root/.claude/settings.json"
+        # shellcheck disable=SC2016  # literal $CLAUDE_PROJECT_DIR on purpose — expanded by the hook shell at runtime
         cmd_path='$CLAUDE_PROJECT_DIR/.claude/agent-on-toast/on-toast.sh'
     fi
 
